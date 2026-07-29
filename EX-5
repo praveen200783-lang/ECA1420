@@ -1,0 +1,51 @@
+// Seven segment pins (a,b,c,d,e,f,g)
+const int segPins[7] = {1, 2, 3, 4, 5, 6, 7};
+const int buttonPin = 12;
+
+int digit = 0;
+bool lastButtonState = HIGH;
+
+// Segment patterns for Common Cathode display
+bool numbers[10][7] = {
+  {1,1,1,1,1,1,0}, //0
+  {0,1,1,0,0,0,0}, //1
+  {1,1,0,1,1,0,1}, //2
+  {1,1,1,1,0,0,1}, //3
+  {0,1,1,0,0,1,1}, //4
+  {1,0,1,1,0,1,1}, //5
+  {1,0,1,1,1,1,1}, //6
+  {1,1,1,0,0,0,0}, //7
+  {1,1,1,1,1,1,1}, //8
+  {1,1,1,1,0,1,1}  //9
+};
+
+void setup() {
+  pinMode(buttonPin, INPUT_PULLUP);
+
+  for (int i = 0; i < 7; i++) {
+    pinMode(segPins[i], OUTPUT);
+  }
+
+  displayDigit(digit);
+}
+
+void loop() {
+  bool buttonState = digitalRead(buttonPin);
+
+  if (lastButtonState == HIGH && buttonState == LOW) {
+    digit++;
+    if (digit > 9)
+      digit = 0;
+
+    displayDigit(digit);
+    delay(200); // debounce
+  }
+
+  lastButtonState = buttonState;
+}
+
+void displayDigit(int n) {
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(segPins[i], numbers[n][i]);
+  }
+}
