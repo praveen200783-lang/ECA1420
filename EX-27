@@ -1,0 +1,110 @@
+#include <systemc.h>
+
+SC_MODULE(ProcessA)
+{
+    sc_semaphore* semaphore;
+
+    SC_CTOR(ProcessA)
+    {
+        SC_THREAD(run);
+    }
+
+    void run()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            cout << sc_time_stamp()
+                 << " Process A: Waiting for semaphore"
+                 << endl;
+
+            semaphore->wait();
+
+            cout << sc_time_stamp()
+                 << " Process A: Semaphore acquired"
+                 << endl;
+
+            cout << sc_time_stamp()
+                 << " Process A: Using shared resource"
+                 << endl;
+
+            wait(5, SC_NS);
+
+            cout << sc_time_stamp()
+                 << " Process A: Releasing semaphore"
+                 << endl;
+
+            semaphore->post();
+
+            wait(2, SC_NS);
+        }
+    }
+};
+
+
+SC_MODULE(ProcessB)
+{
+    sc_semaphore* semaphore;
+
+    SC_CTOR(ProcessB)
+    {
+        SC_THREAD(run);
+    }
+
+    void run()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            cout << sc_time_stamp()
+                 << " Process B: Waiting for semaphore"
+                 << endl;
+
+            semaphore->wait();
+
+            cout << sc_time_stamp()
+                 << " Process B: Semaphore acquired"
+                 << endl;
+
+            cout << sc_time_stamp()
+                 << " Process B: Using shared resource"
+                 << endl;
+
+            wait(5, SC_NS);
+
+            cout << sc_time_stamp()
+                 << " Process B: Releasing semaphore"
+                 << endl;
+
+            semaphore->post();
+
+            wait(2, SC_NS);
+        }
+    }
+};
+
+
+SC_MODULE(Top)
+{
+    sc_semaphore semaphore;
+
+    ProcessA processA;
+    ProcessB processB;
+
+    SC_CTOR(Top)
+        : semaphore("BinarySemaphore", 1),
+          processA("ProcessA"),
+          processB("ProcessB")
+    {
+        processA.semaphore = &semaphore;
+        processB.semaphore = &semaphore;
+    }
+};
+
+
+int sc_main(int argc, char* argv[])
+{
+    Top top("Top");
+
+    sc_start(50, SC_NS);
+
+    return 0;
+}
