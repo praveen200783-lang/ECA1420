@@ -1,0 +1,79 @@
+#include <systemc.h>
+
+// Producer process
+SC_MODULE(Producer)
+{
+    sc_fifo_out<int> out;
+
+    SC_CTOR(Producer)
+    {
+        SC_THREAD(produce);
+    }
+
+    void produce()
+    {
+        for (int i = 1; i <= 10; i++)
+        {
+            cout << sc_time_stamp()
+                 << " Producer: Producing " << i << endl;
+
+            out.write(i);
+
+            wait(1, SC_NS);
+        }
+    }
+};
+
+// Consumer process
+SC_MODULE(Consumer)
+{
+    sc_fifo_in<int> in;
+
+    SC_CTOR(Consumer)
+    {
+        SC_THREAD(consume);
+    }
+
+    void consume()
+    {
+        for (int i = 1; i <= 10; i++)
+        {
+            int data;
+
+            data = in.read();
+
+            cout << sc_time_stamp()
+                 << " Consumer: Consuming " << data << endl;
+
+            wait(2, SC_NS);
+        }
+    }
+};
+
+// Top module
+SC_MODULE(Top)
+{
+    sc_fifo<int> buffer;
+
+    Producer producer;
+    Consumer consumer;
+
+    SC_CTOR(Top)
+        : buffer("buffer", 5),
+          producer("producer"),
+          consumer("consumer")
+    {
+        producer.out(buffer);
+        consumer.in(buffer);
+    }
+};
+
+// Main function
+int sc_main(int argc, char* argv[])
+{
+    Top top("top");
+
+    sc_start(30, SC_NS);
+
+    return 0;
+}
