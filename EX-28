@@ -1,0 +1,145 @@
+#include <systemc.h>
+
+// Process A
+SC_MODULE(ProcessA)
+{
+    sc_semaphore* semaphore;
+
+    SC_CTOR(ProcessA)
+    {
+        SC_THREAD(run);
+    }
+
+    void run()
+    {
+        cout << sc_time_stamp()
+             << " Process A: Waiting for semaphore"
+             << endl;
+
+        semaphore->wait();
+
+        cout << sc_time_stamp()
+             << " Process A: Acquired semaphore"
+             << endl;
+
+        cout << sc_time_stamp()
+             << " Process A: Using resource"
+             << endl;
+
+        wait(5, SC_NS);
+
+        cout << sc_time_stamp()
+             << " Process A: Releasing semaphore"
+             << endl;
+
+        semaphore->post();
+    }
+};
+
+
+// Process B
+SC_MODULE(ProcessB)
+{
+    sc_semaphore* semaphore;
+
+    SC_CTOR(ProcessB)
+    {
+        SC_THREAD(run);
+    }
+
+    void run()
+    {
+        cout << sc_time_stamp()
+             << " Process B: Waiting for semaphore"
+             << endl;
+
+        semaphore->wait();
+
+        cout << sc_time_stamp()
+             << " Process B: Acquired semaphore"
+             << endl;
+
+        cout << sc_time_stamp()
+             << " Process B: Using resource"
+             << endl;
+
+        wait(5, SC_NS);
+
+        cout << sc_time_stamp()
+             << " Process B: Releasing semaphore"
+             << endl;
+
+        semaphore->post();
+    }
+};
+
+
+// Process C
+SC_MODULE(ProcessC)
+{
+    sc_semaphore* semaphore;
+
+    SC_CTOR(ProcessC)
+    {
+        SC_THREAD(run);
+    }
+
+    void run()
+    {
+        cout << sc_time_stamp()
+             << " Process C: Waiting for semaphore"
+             << endl;
+
+        semaphore->wait();
+
+        cout << sc_time_stamp()
+             << " Process C: Acquired semaphore"
+             << endl;
+
+        cout << sc_time_stamp()
+             << " Process C: Using resource"
+             << endl;
+
+        wait(5, SC_NS);
+
+        cout << sc_time_stamp()
+             << " Process C: Releasing semaphore"
+             << endl;
+
+        semaphore->post();
+    }
+};
+
+
+// Top Module
+SC_MODULE(Top)
+{
+    // Counting semaphore with 3 resources
+    sc_semaphore semaphore;
+
+    ProcessA processA;
+    ProcessB processB;
+    ProcessC processC;
+
+    SC_CTOR(Top)
+        : semaphore("CountingSemaphore", 3),
+          processA("ProcessA"),
+          processB("ProcessB"),
+          processC("ProcessC")
+    {
+        processA.semaphore = &semaphore;
+        processB.semaphore = &semaphore;
+        processC.semaphore = &semaphore;
+    }
+};
+
+
+// Main
+int sc_main(int argc, char* argv[])
+{
+    Top top("Top");
+
+    sc_start(20, SC_NS);
+
+    return 0;
+}
