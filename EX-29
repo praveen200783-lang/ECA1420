@@ -1,0 +1,130 @@
+#include <systemc.h>
+
+SC_MODULE(InterruptController)
+{
+    sc_event irq1;
+    sc_event irq2;
+    sc_event irq3;
+
+    bool pending1;
+    bool pending2;
+    bool pending3;
+
+    SC_CTOR(InterruptController)
+    {
+        pending1 = false;
+        pending2 = false;
+        pending3 = false;
+
+        SC_THREAD(interrupt_generator);
+        SC_THREAD(interrupt_handler);
+    }
+
+    // Generate interrupts
+    void interrupt_generator()
+    {
+        wait(5, SC_NS);
+
+        cout << sc_time_stamp()
+             << " IRQ3 Generated (Low Priority)"
+             << endl;
+
+        pending3 = true;
+        irq3.notify();
+
+        wait(2, SC_NS);
+
+        cout << sc_time_stamp()
+             << " IRQ1 Generated (High Priority)"
+             << endl;
+
+        pending1 = true;
+        irq1.notify();
+
+        wait(1, SC_NS);
+
+        cout << sc_time_stamp()
+             << " IRQ2 Generated (Medium Priority)"
+             << endl;
+
+        pending2 = true;
+        irq2.notify();
+
+        wait(5, SC_NS);
+
+        cout << sc_time_stamp()
+             << " IRQ1 Generated Again"
+             << endl;
+
+        pending1 = true;
+        irq1.notify();
+    }
+
+
+    // Interrupt handler
+    void interrupt_handler()
+    {
+        while (true)
+        {
+            wait(irq1 | irq2 | irq3);
+
+            // Highest priority
+            if (pending1)
+            {
+                cout << sc_time_stamp()
+                     << " CPU: Handling IRQ1 (HIGH Priority)"
+                     << endl;
+
+                pending1 = false;
+
+                wait(3, SC_NS);
+
+                cout << sc_time_stamp()
+                     << " CPU: IRQ1 Completed"
+                     << endl;
+            }
+
+            // Medium priority
+            else if (pending2)
+            {
+                cout << sc_time_stamp()
+                     << " CPU: Handling IRQ2 (MEDIUM Priority)"
+                     << endl;
+
+                pending2 = false;
+
+                wait(3, SC_NS);
+
+                cout << sc_time_stamp()
+                     << " CPU: IRQ2 Completed"
+                     << endl;
+            }
+
+            // Lowest priority
+            else if (pending3)
+            {
+                cout << sc_time_stamp()
+                     << " CPU: Handling IRQ3 (LOW Priority)"
+                     << endl;
+
+                pending3 = false;
+
+                wait(3, SC_NS);
+
+                cout << sc_time_stamp()
+                     << " CPU: IRQ3 Completed"
+                     << endl;
+            }
+        }
+    }
+};
+
+
+int sc_main(int argc, char* argv[])
+{
+    InterruptController controller("InterruptController");
+
+    sc_start(30, SC_NS);
+
+    return 0;
+}
