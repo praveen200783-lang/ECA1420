@@ -1,0 +1,116 @@
+#include <systemc.h>
+
+using namespace sc_core;
+using namespace std;
+
+
+//====================================================
+// TASK MODULE
+//====================================================
+
+SC_MODULE(Task)
+{
+    int priority;
+    string task_name;
+
+    SC_CTOR(Task)
+    {
+        // Constructor
+    }
+
+    void execute()
+    {
+        cout << sc_time_stamp()
+             << " " << task_name
+             << " started"
+             << " [Priority = "
+             << priority << "]"
+             << endl;
+
+        // Simulate task execution
+        wait(3, SC_NS);
+
+        cout << sc_time_stamp()
+             << " " << task_name
+             << " completed"
+             << endl;
+    }
+};
+
+
+//====================================================
+// RTOS SCHEDULER
+//====================================================
+
+SC_MODULE(Scheduler)
+{
+    Task task1;
+    Task task2;
+    Task task3;
+
+    SC_CTOR(Scheduler)
+        : task1("Task1"),
+          task2("Task2"),
+          task3("Task3")
+    {
+        task1.task_name = "Task 1";
+        task1.priority = 1;
+
+        task2.task_name = "Task 2";
+        task2.priority = 2;
+
+        task3.task_name = "Task 3";
+        task3.priority = 3;
+
+        SC_THREAD(schedule);
+    }
+
+
+    void schedule()
+    {
+        cout << "RTOS Scheduler Started"
+             << endl;
+
+        cout << "Task 1 Priority = "
+             << task1.priority << endl;
+
+        cout << "Task 2 Priority = "
+             << task2.priority << endl;
+
+        cout << "Task 3 Priority = "
+             << task3.priority << endl;
+
+        cout << endl;
+
+
+        // Highest priority first
+        task1.execute();
+
+        // Medium priority
+        task2.execute();
+
+        // Lowest priority
+        task3.execute();
+
+
+        cout << endl;
+
+        cout << sc_time_stamp()
+             << " All tasks completed"
+             << endl;
+    }
+};
+
+
+//====================================================
+// MAIN
+//====================================================
+
+int sc_main(int argc, char* argv[])
+{
+    Scheduler scheduler("RTOS_Scheduler");
+
+    sc_start(20, SC_NS);
+
+    return 0;
+}
