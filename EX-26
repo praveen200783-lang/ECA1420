@@ -1,0 +1,203 @@
+#include <systemc.h>
+#include <tlm.h>
+#include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/simple_target_socket.h>
+
+using namespace sc_core;
+using namespace sc_dt;
+using namespace std;
+using namespace tlm;
+
+
+//====================================================
+// TARGET
+//====================================================
+
+SC_MODULE(Target)
+{
+    tlm_utils::simple_target_socket<Target> socket;
+
+    SC_CTOR(Target)
+    {
+        socket.register_b_transport(
+            this,
+            &Target::b_transport
+        );
+    }
+
+    void b_transport(
+        tlm::tlm_generic_payload& trans,
+        sc_time& delay)
+    {
+        tlm::tlm_command cmd = trans.get_command();
+
+        unsigned char* data = trans.get_data_ptr();
+
+        uint64_t address = trans.get_address();
+
+        cout << sc_time_stamp()
+             << " Target: Transaction received"
+             << endl;
+
+        cout << "Address = 0x"
+             << hex << address << dec
+             << endl;
+
+
+        // WRITE operation
+        if (cmd == tlm::TLM_WRITE_COMMAND)
+        {
+            cout << "WRITE Data = "
+                 << (int)data[0]
+                 << endl;
+        }
+
+
+        // READ operation
+        else if (cmd == tlm::TLM_READ_COMMAND)
+        {
+            data[0] = 100;
+
+            cout << "READ Data = "
+                 << (int)data[0]
+                 << endl;
+        }
+
+
+        // Add transaction delay
+        delay += sc_time(10, SC_NS);
+
+        trans.set_response_status(
+            tlm::TLM_OK_RESPONSE
+        );
+    }
+};
+
+
+//====================================================
+// INITIATOR
+//====================================================
+
+SC_MODULE(Initiator)
+{
+    tlm_utils::simple_initiator_socket<Initiator> socket;
+
+    SC_CTOR(Initiator)
+    {
+        SC_THREAD(process);
+    }
+
+
+    void process()
+    {
+        tlm::tlm_generic_payload trans;
+
+        sc_time delay;
+
+        unsigned char data[1];
+
+
+        //================================================
+        // WRITE TRANSACTION
+        //================================================
+
+        data[0] = 50;
+
+        trans.set_command(
+            tlm::TLM_WRITE_COMMAND
+        );
+
+        trans.set_address(0x1000);
+
+        trans.set_data_ptr(data);
+
+        trans.set_data_length(1);
+
+
+        cout << sc_time_stamp()
+             << " Initiator: Sending WRITE"
+             << endl;
+
+
+        delay = SC_ZERO_TIME;
+
+        socket->b_transport(
+            trans,
+            delay
+        );
+
+        wait(delay);
+
+
+        //================================================
+        // READ TRANSACTION
+        //================================================
+
+        trans.set_command(
+            tlm::TLM_READ_COMMAND
+        );
+
+        trans.set_address(0x1000);
+
+        trans.set_data_ptr(data);
+
+        trans.set_data_length(1);
+
+
+        cout << sc_time_stamp()
+             << " Initiator: Sending READ"
+             << endl;
+
+
+        delay = SC_ZERO_TIME;
+
+        socket->b_transport(
+            trans,
+            delay
+        );
+
+        wait(delay);
+
+
+        cout << sc_time_stamp()
+             << " Initiator: Received Data = "
+             << (int)data[0]
+             << endl;
+    }
+};
+
+
+//====================================================
+// TOP MODULE
+//====================================================
+
+SC_MODULE(Top)
+{
+    Initiator initiator;
+
+    Target target;
+
+
+    SC_CTOR(Top)
+        : initiator("initiator"),
+          target("target")
+    {
+        initiator.socket.bind(
+            target.socket
+        );
+    }
+};
+
+
+//====================================================
+// MAIN
+//====================================================
+
+int sc_main(int argc, char* argv[])
+{
+    Top top("top");
+
+    sc_start();
+
+    return 0;
+}
