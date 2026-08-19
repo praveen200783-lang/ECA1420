@@ -1,0 +1,46 @@
+#include <systemc.h>
+
+SC_MODULE(ClockProcess)
+{
+    sc_in<bool> clk;
+
+    void process1()
+    {
+        while (true)
+        {
+            wait(clk.posedge_event());
+
+            cout << "Process 1 executed at "
+                 << sc_time_stamp() << endl;
+        }
+    }
+
+    void process2()
+    {
+        while (true)
+        {
+            wait(clk.posedge_event());
+
+            cout << "Process 2 executed at "
+                 << sc_time_stamp() << endl;
+        }
+    }
+
+    SC_CTOR(ClockProcess)
+    {
+        SC_THREAD(process1);
+        SC_THREAD(process2);
+    }
+};
+
+int sc_main(int argc, char* argv[])
+{
+    sc_clock clk("clk", 1, SC_NS);
+
+    ClockProcess process("process");
+    process.clk(clk);
+
+    sc_start(5, SC_NS);
+
+    return 0;
+}
